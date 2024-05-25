@@ -26,11 +26,13 @@ func main() {
 
 			// database
 			&cli.StringFlag{
-				Name: "db-url",
+				Name: "cache-url",
 			},
-			&cli.IntFlag{
-				Name:  "pool",
-				Value: 2,
+			&cli.StringFlag{
+				Name: "cache-user",
+			},
+			&cli.StringFlag{
+				Name: "cache-secret",
 			},
 		},
 		Action: func(c *cli.Context) error {
@@ -41,9 +43,10 @@ func main() {
 				Rest: config.RestConfig{
 					Port: c.String("http-port"),
 				},
-				PG: config.PG{
-					URL:     c.String("db-url"),
-					PoolMax: c.Int("pool"),
+				Cache: config.Cache{
+					URL:    c.String("cache-url"),
+					User:   c.String("cache-user"),
+					Secret: c.String("cache-secret"),
 				},
 			})
 

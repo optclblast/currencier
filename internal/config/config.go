@@ -3,7 +3,7 @@ package config
 type Config struct {
 	Common CommonConfig
 	Rest   RestConfig
-	PG     PG
+	Cache  Cache
 }
 
 type CommonConfig struct {
@@ -15,7 +15,8 @@ type RestConfig struct {
 	TLS  bool
 }
 
-type PG struct {
-	URL     string
-	PoolMax int
+type Cache struct {
+	URL    string
+	User   string
+	Secret string
 }

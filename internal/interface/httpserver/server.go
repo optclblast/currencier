@@ -55,7 +55,7 @@ func (s *Server) start() {
 	)
 
 	go func() {
-		s.notify <- s.server.ListenAndServe()
+		s.notify <- http.ListenAndServe(s.server.Addr, s.server.Handler)
 		close(s.notify)
 	}()
 }

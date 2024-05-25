@@ -3,6 +3,7 @@ package app
 
 import (
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -11,8 +12,9 @@ import (
 	v1 "github.com/optclblast/currencier/internal/controller/http/v1"
 	"github.com/optclblast/currencier/internal/interface/httpserver"
 	"github.com/optclblast/currencier/internal/pkg/logger"
-	"github.com/optclblast/currencier/internal/pkg/postgres"
-	// "github.com/optclblast/currencier/internal/usecase/webapi"
+	"github.com/optclblast/currencier/internal/usecase/cache"
+	"github.com/optclblast/currencier/internal/usecase/interactor"
+	"github.com/redis/go-redis/v9"
 )
 
 // Run creates objects via constructors.
@@ -21,27 +23,31 @@ func Run(cfg *config.Config) {
 
 	l.Debug("config", slog.Any("struct", cfg))
 
-	// Repository
-	pg, err := postgres.New(cfg.PG.URL, postgres.MaxPoolSize(cfg.PG.PoolMax))
-	if err != nil {
-		l.Error(
-			"error initialize pg connection",
-			logger.Err(err),
-		)
-	}
-	defer pg.Close()
+	// pg, err := postgres.New(cfg.PG.URL, postgres.MaxPoolSize(cfg.PG.PoolMax))
+	// if err != nil {
+	// 	l.Error(
+	// 		"error initialize pg connection",
+	// 		logger.Err(err),
+	// 	)
+	// }
+	// defer pg.Close()
 
-	// Use case
-	// translationUseCase := usecase.New(
-	// 	repo.New(pg),
-	// 	webapi.New(),
-	// )
+	cache := cache.NewCache(redis.NewClient(&redis.Options{
+		Addr:     cfg.Cache.URL,
+		Username: cfg.Cache.User,
+		Password: cfg.Cache.Secret,
+	}))
 
-	// HTTP Server
-	handler := v1.NewHandler(l)
+	handler := v1.NewHandler(l, v1.NewCurrencyController(
+		l.WithGroup("currency-controller"),
+		interactor.NewCurrencyInteractor(
+			l.WithGroup("currency-interactor"),
+			cache,
+			http.DefaultClient,
+		),
+	))
 	httpServer := httpserver.New(l, handler, httpserver.Port(cfg.Rest.Port))
 
-	// Waiting signal
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 
@@ -51,7 +57,7 @@ func Run(cfg *config.Config) {
 			"interrupt signal. ",
 			slog.String("signal", s.String()),
 		)
-	case err = <-httpServer.Notify():
+	case err := <-httpServer.Notify():
 		l.Error(
 			"error",
 			logger.Err(err),

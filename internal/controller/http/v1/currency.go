@@ -18,6 +18,16 @@ type currencyController struct {
 	interactor interactor.CurrencyInteractor
 }
 
+func NewCurrencyController(
+	log *slog.Logger,
+	interactor interactor.CurrencyInteractor,
+) CurrencyController {
+	return &currencyController{
+		log:        log,
+		interactor: interactor,
+	}
+}
+
 func (c *currencyController) GetCurrencyQuotation(w http.ResponseWriter, req *http.Request) (any, error) {
 	queryParams := req.URL.Query()
 
