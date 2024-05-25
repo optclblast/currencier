@@ -1,7 +1,14 @@
 package v1
 
 import (
+	"errors"
 	"net/http"
+)
+
+var (
+	ErrorDateRequired = errors.New("date required")
+	ErrorDateInvalid  = errors.New("date invalid")
+	ErrorValRequired  = errors.New("val required")
 )
 
 type apiError struct {

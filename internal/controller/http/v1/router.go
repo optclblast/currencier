@@ -11,15 +11,18 @@ import (
 
 type handler struct {
 	*chi.Mux
-	log *slog.Logger
+	log        *slog.Logger
+	controller CurrencyController
 }
 
 func NewHandler(
 	log *slog.Logger,
+	controller CurrencyController,
 ) *handler {
 	h := &handler{
-		Mux: chi.NewRouter(),
-		log: log,
+		Mux:        chi.NewRouter(),
+		log:        log,
+		controller: controller,
 	}
 
 	h.buildRouter()
@@ -30,7 +33,7 @@ func NewHandler(
 func (s *handler) buildRouter() {
 	r := chi.NewRouter()
 
-	r.Get("/currency", s.handle(nil, "get_currency"))
+	r.Get("/currency", s.handle(s.controller.GetCurrencyQuotation, "get_currency"))
 }
 
 func (s *handler) handle(
