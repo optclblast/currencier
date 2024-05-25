@@ -19,7 +19,7 @@ import (
 
 // Run creates objects via constructors.
 func Run(cfg *config.Config) {
-	l := logger.NewLogger(logger.MapLevel(cfg.Common.Level))
+	l := logger.NewLogger(logger.WithLevel(logger.MapLevel(cfg.Common.Level)))
 
 	l.Debug("config", slog.Any("struct", cfg))
 
@@ -38,10 +38,13 @@ func Run(cfg *config.Config) {
 		Password: cfg.Cache.Secret,
 	}))
 
+	apiKey := os.Getenv("FXRATEAPI_API_TOKEN")
+
 	handler := v1.NewHandler(l, v1.NewCurrencyController(
 		l.WithGroup("currency-controller"),
 		interactor.NewCurrencyInteractor(
 			l.WithGroup("currency-interactor"),
+			apiKey,
 			cache,
 			http.DefaultClient,
 		),

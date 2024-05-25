@@ -33,13 +33,13 @@ type currencyInteractor struct {
 
 func NewCurrencyInteractor(
 	log *slog.Logger,
-	//repo repo.QutesRepo,
+	apiKey string,
 	cache cache.Cache,
 	client *http.Client,
 ) CurrencyInteractor {
 	return &currencyInteractor{
-		log: log,
-		//repo:   repo,
+		log:    log,
+		apiKey: apiKey,
 		cache:  cache,
 		client: client,
 	}
@@ -52,9 +52,11 @@ type GetQuotationParams struct {
 }
 
 type currencyApiResponse struct {
-	Success bool               `json:"success"`
-	Rates   map[string]float64 `json:"rates"`
-	Base    string             `json:"base"`
+	Success     bool               `json:"success"`
+	Rates       map[string]float64 `json:"rates,omitempty"`
+	Base        string             `json:"base,omitempty"`
+	Error       string             `json:"error,omitempty"`
+	Description string             `json:"description,omitempty"`
 }
 
 const baseCurrURL string = "https://api.fxratesapi.com/historical"
@@ -68,7 +70,21 @@ func (c *currencyInteractor) GetQuotation(
 		CurrencyIDTo: params.CurrencyIDTo,
 		DateKey:      buildDateKey(params.Date),
 	}); err == nil {
+		c.log.Debug(
+			"cache hit",
+			slog.String("CurrencyID", params.CurrencyID),
+			slog.String("CurrencyIDTo", params.CurrencyIDTo),
+			slog.String("DateKey", buildDateKey(params.Date)),
+		)
 		return quotation, nil
+	} else {
+		c.log.Debug(
+			"cache miss",
+			slog.String("CurrencyID", params.CurrencyID),
+			slog.String("CurrencyIDTo", params.CurrencyIDTo),
+			slog.String("DateKey", buildDateKey(params.Date)),
+			logger.Err(err),
+		)
 	}
 
 	if params.CurrencyIDTo == "" {
@@ -109,6 +125,10 @@ func (c *currencyInteractor) GetQuotation(
 		return nil, fmt.Errorf("error unmarshal response body. %w", err)
 	}
 
+	if !data.Success {
+		return nil, fmt.Errorf("eror fetch currency quote from api. %s", data.Description)
+	}
+
 	quote := entity.CurrencyQuotation{
 		Date:         params.Date,
 		CurrencyID:   params.CurrencyID,
@@ -116,7 +136,12 @@ func (c *currencyInteractor) GetQuotation(
 		Value:        data.Rates[params.CurrencyIDTo],
 	}
 
-	if err = c.cache.Set(ctx, quote, time.Hour*24); err != nil {
+	if err = c.cache.Set(
+		ctx,
+		params.CurrencyID+params.CurrencyIDTo+buildDateKey(params.Date),
+		quote,
+		time.Hour*24,
+	); err != nil {
 		c.log.Error(
 			"error update cache",
 			logger.Err(fmt.Errorf("error update cache. %w", err)),
@@ -156,5 +181,7 @@ func buildDateKey(t time.Time) string {
 		t = time.Now()
 	}
 
-	return fmt.Sprintf("&date=%v-%v-%v", t.Year(), int(t.Month()), t.Day())
+	layout := "2006-01-02"
+
+	return t.Format(layout)
 }

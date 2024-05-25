@@ -7,3 +7,5 @@ bin/
 *.test
 *.out
 vendor/
+cmd/app/__*
+.env

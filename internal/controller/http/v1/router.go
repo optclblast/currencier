@@ -20,7 +20,6 @@ func NewHandler(
 	controller CurrencyController,
 ) *handler {
 	h := &handler{
-		Mux:        chi.NewRouter(),
 		log:        log,
 		controller: controller,
 	}
@@ -34,6 +33,8 @@ func (s *handler) buildRouter() {
 	r := chi.NewRouter()
 
 	r.Get("/currency", s.handle(s.controller.GetCurrencyQuotation, "get_currency"))
+
+	s.Mux = r
 }
 
 func (s *handler) handle(

@@ -39,7 +39,9 @@ func (c *currencyController) GetCurrencyQuotation(w http.ResponseWriter, req *ht
 		return nil, ErrorValRequired
 	}
 
-	date, err := time.Parse("%d.%m.%Y", queryParams["date"][0])
+	layout := "02.01.2006"
+
+	date, err := time.Parse(layout, queryParams["date"][0])
 	if err != nil {
 		return nil, ErrorDateInvalid
 	}

@@ -21,12 +21,14 @@ func main() {
 
 			// rest
 			&cli.StringFlag{
-				Name: "http-port",
+				Name:  "http-port",
+				Value: "8080",
 			},
 
 			// database
 			&cli.StringFlag{
-				Name: "cache-url",
+				Name:  "cache-url",
+				Value: "localhost:6379",
 			},
 			&cli.StringFlag{
 				Name: "cache-user",

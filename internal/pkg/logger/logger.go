@@ -16,7 +16,6 @@ type loggerBuilder struct {
 type NewLoggerOption func(lb *loggerBuilder)
 
 func NewLogger(
-	level slog.Level,
 	opts ...NewLoggerOption,
 ) *slog.Logger {
 	lb := new(loggerBuilder)
