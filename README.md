@@ -27,6 +27,9 @@ curl --request GET \
 Response:
 ```json
 {
-        // todo
+  "date": "2024-01-05T00:00:00Z",
+  "currency_id": "EUR",
+  "currency_id_to": "RUB",
+  "value": 99.493813
 }
 ```

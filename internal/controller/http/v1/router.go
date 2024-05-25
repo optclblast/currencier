@@ -49,14 +49,15 @@ func (s *handler) handle(
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
-
 		out, err := json.Marshal(resp)
 		if err != nil {
 			s.responseError(w, err, methodName)
 
 			return
 		}
+
+		w.Header().Add("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
 
 		if _, err = w.Write(out); err != nil {
 			s.log.Error(
