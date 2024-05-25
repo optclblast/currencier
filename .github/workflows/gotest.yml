@@ -1,9 +1,6 @@
 name: Go Test
-on: pull_request
 
 on:
-  push:
-    branches: ["main", "chore/upgrade-linter"]
   pull_request:
     branches: ["main"]
 
