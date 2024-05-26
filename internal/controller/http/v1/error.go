@@ -25,6 +25,12 @@ func buildApiError(code int, message string) apiError {
 
 func mapError(err error) apiError {
 	switch {
+	case errors.Is(err, ErrorDateInvalid):
+		return buildApiError(http.StatusBadRequest, "Date Invalid")
+	case errors.Is(err, ErrorDateRequired):
+		return buildApiError(http.StatusBadRequest, "Date Required")
+	case errors.Is(err, ErrorValRequired):
+		return buildApiError(http.StatusBadRequest, "Val Required")
 	default:
 		return buildApiError(http.StatusInternalServerError, "Internal Server Error")
 	}

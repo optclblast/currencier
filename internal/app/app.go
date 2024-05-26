@@ -23,15 +23,6 @@ func Run(cfg *config.Config) {
 
 	l.Debug("config", slog.Any("struct", cfg))
 
-	// pg, err := postgres.New(cfg.PG.URL, postgres.MaxPoolSize(cfg.PG.PoolMax))
-	// if err != nil {
-	// 	l.Error(
-	// 		"error initialize pg connection",
-	// 		logger.Err(err),
-	// 	)
-	// }
-	// defer pg.Close()
-
 	cache := cache.NewCache(redis.NewClient(&redis.Options{
 		Addr:     cfg.Cache.URL,
 		Username: cfg.Cache.User,

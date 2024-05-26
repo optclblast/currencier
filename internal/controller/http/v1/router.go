@@ -74,6 +74,8 @@ func (s *handler) responseError(w http.ResponseWriter, e error, methodName strin
 
 	apiErr := mapError(e)
 
+	w.Header().Add("Content-Type", "application/json")
+
 	out, err := json.Marshal(apiErr)
 	if err != nil {
 		s.log.Error("error marshal api error", logger.Err(err))
