@@ -5,7 +5,8 @@ networks:
 
 services:
   currencier-api-test:
-    container_name: currencier
+    container_name: currencier-test
+    hostname: currencier
     build: 
       context: .
       dockerfile: ./Dockerfile
@@ -32,7 +33,8 @@ services:
         condition: service_started
 
   cache-test:
-    container_name: cache
+    container_name: cache-test
+    hostname: cache
     image: redis:7.2.4
     restart: always
     networks:

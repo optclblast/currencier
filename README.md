@@ -15,6 +15,14 @@ Or
 make up
 ```
 ## Tests
+Set CURRENCIER_TESTS_HOST variable in your .env file, so the file should contain somethink like this:
+```
+ FXRATEAPI_API_TOKEN=fxr_live_sd6f575da657g6df786s56765587
+ CURRENCIER_TESTS_HOST="http://currencier:8080"
+```
+http://currencier:8080 for testing with .test compose project.  
+
+And now run the tests!
 ``` bash
 sudo docker compose -f docker-compose.test.yaml up --build --abort-on-container-exit
 sudo docker compose -f docker-compose.test.yaml down --volumes
