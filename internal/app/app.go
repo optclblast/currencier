@@ -40,15 +40,20 @@ func Run(cfg *config.Config) {
 
 	apiKey := os.Getenv("FXRATEAPI_API_TOKEN")
 
+	currencyInteractor := interactor.NewCurrencyInteractor(
+		l.WithGroup("currency-interactor"),
+		apiKey,
+		cache,
+		http.DefaultClient,
+	)
+
 	handler := v1.NewHandler(l, v1.NewCurrencyController(
 		l.WithGroup("currency-controller"),
-		interactor.NewCurrencyInteractor(
-			l.WithGroup("currency-interactor"),
-			apiKey,
-			cache,
-			http.DefaultClient,
-		),
+		currencyInteractor,
 	))
+
+	currencyInteractor.RunWorker()
+
 	httpServer := httpserver.New(l, handler, httpserver.Port(cfg.Rest.Port))
 
 	interrupt := make(chan os.Signal, 1)

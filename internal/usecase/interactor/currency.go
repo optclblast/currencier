@@ -13,7 +13,6 @@ import (
 	"github.com/optclblast/currencier/internal/entity"
 	"github.com/optclblast/currencier/internal/pkg/logger"
 	"github.com/optclblast/currencier/internal/usecase/cache"
-	"github.com/optclblast/currencier/internal/usecase/repo"
 )
 
 type CurrencyInteractor interface {
@@ -21,11 +20,11 @@ type CurrencyInteractor interface {
 		ctx context.Context,
 		params GetQuotationParams,
 	) (*entity.CurrencyQuotation, error)
+	RunWorker()
 }
 
 type currencyInteractor struct {
 	log    *slog.Logger
-	repo   repo.QutesRepo
 	cache  cache.Cache
 	client *http.Client
 	apiKey string
@@ -96,6 +95,31 @@ func (c *currencyInteractor) GetQuotation(
 		return nil, fmt.Errorf("error build request url. %w", err)
 	}
 
+	quote, err := c.fetchQuote(ctx, cdrUrl, params)
+	if err != nil {
+		return nil, fmt.Errorf("error fetch quote. %w", err)
+	}
+
+	if err = c.cache.Set(
+		ctx,
+		params.CurrencyID+params.CurrencyIDTo+buildDateKey(params.Date),
+		*quote,
+		time.Hour*24,
+	); err != nil {
+		c.log.Error(
+			"error update cache",
+			logger.Err(fmt.Errorf("error update cache. %w", err)),
+		)
+	}
+
+	return quote, nil
+}
+
+func (c *currencyInteractor) fetchQuote(
+	ctx context.Context,
+	cdrUrl string,
+	params GetQuotationParams,
+) (*entity.CurrencyQuotation, error) {
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodGet,
@@ -129,26 +153,123 @@ func (c *currencyInteractor) GetQuotation(
 		return nil, fmt.Errorf("eror fetch currency quote from api. %s", data.Description)
 	}
 
-	quote := entity.CurrencyQuotation{
+	return &entity.CurrencyQuotation{
 		Date:         params.Date,
 		CurrencyID:   params.CurrencyID,
 		CurrencyIDTo: params.CurrencyIDTo,
 		Value:        data.Rates[params.CurrencyIDTo],
-	}
+	}, nil
+}
 
-	if err = c.cache.Set(
-		ctx,
-		params.CurrencyID+params.CurrencyIDTo+buildDateKey(params.Date),
-		quote,
-		time.Hour*24,
-	); err != nil {
-		c.log.Error(
-			"error update cache",
-			logger.Err(fmt.Errorf("error update cache. %w", err)),
+func (c *currencyInteractor) RunWorker() {
+	go func() {
+		c.log.Info("currency quotations collecting worker started")
+
+		defer func() {
+			c.log.Info("stop currency quotations collecting worker! bye bye!")
+
+			if err := recover(); err != nil {
+				c.log.Error("worker panic!", slog.Any("data", err))
+			}
+		}()
+
+		startedAt := time.Now().UTC()
+		day := startedAt.Day()
+
+		if startedAt.Hour() >= 10 {
+			day += 1
+		}
+
+		beginWork := time.Date(
+			startedAt.Year(),
+			startedAt.Month(),
+			day,
+			10,
+			00,
+			0,
+			0,
+			time.UTC,
 		)
-	}
 
-	return &quote, nil
+		fmt.Printf("sa : %v, bw: %v", startedAt, beginWork)
+
+		initialTicker := time.NewTicker(beginWork.Sub(startedAt))
+
+		<-initialTicker.C
+		initialTicker.Stop()
+
+		c.log.Info(
+			"worker main loop started",
+		)
+
+		t := time.NewTicker(time.Hour * 24)
+
+		for {
+			for _, curr := range _currenciesList {
+				date := time.Now()
+
+				url, err := c.requestCurrencyQuotationsURL(
+					date,
+					"RUB",
+					curr,
+				)
+				if err != nil {
+					c.log.Error(
+						"error build request url",
+						logger.Err(err),
+					)
+
+					break
+				}
+
+				func() {
+					ctx, cancel := context.WithTimeout(
+						context.TODO(),
+						time.Second*10,
+					)
+
+					defer cancel()
+
+					quote, err := c.fetchQuote(ctx, url, GetQuotationParams{
+						Date:         date,
+						CurrencyID:   curr,
+						CurrencyIDTo: "RUB",
+					})
+					if err != nil {
+						c.log.Error(
+							"error fetch quote",
+							logger.Err(err),
+						)
+
+						return
+					}
+
+					c.log.Debug(
+						"curr cached",
+						slog.Any("quote", quote),
+					)
+
+					if err = c.cache.Set(
+						ctx,
+						quote.CurrencyID+quote.CurrencyIDTo+buildDateKey(date),
+						*quote,
+						time.Hour*24,
+					); err != nil {
+						c.log.Error(
+							"error update cache",
+							logger.Err(
+								err,
+							),
+						)
+					}
+
+				}()
+			}
+
+			<-t.C
+			t.Reset(time.Hour * 24)
+		}
+	}()
 }
 
 func (c *currencyInteractor) requestCurrencyQuotationsURL(
@@ -170,8 +291,11 @@ func (c *currencyInteractor) requestCurrencyQuotationsURL(
 	q.Set("date", buildDateKey(t))
 	q.Set("places", "6")
 	q.Set("format", "json")
-	q.Set("currencies", currTo)
 	q.Set("base", currFrom)
+
+	if currTo != "" {
+		q.Set("currencies", currTo)
+	}
 
 	return u.String() + "?" + q.Encode(), nil
 }
