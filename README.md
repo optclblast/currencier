@@ -10,6 +10,19 @@ FXRATEAPI_API_TOKEN=<your-token-here>
 ```bash
 sudo docker compose build && sudo docker compose up -d
 ```
+Or
+``` bash
+make up
+```
+## Tests
+``` bash
+sudo docker compose -f docker-compose.test.yaml up --build --abort-on-container-exit
+sudo docker compose -f docker-compose.test.yaml down --volumes
+```
+Or 
+``` bash
+make test
+```
 ## Usage 
 **Endpoints:**  
 [GET] /currency  

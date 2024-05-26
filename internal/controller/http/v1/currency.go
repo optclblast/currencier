@@ -46,6 +46,10 @@ func (c *currencyController) GetCurrencyQuotation(w http.ResponseWriter, req *ht
 		return nil, ErrorDateInvalid
 	}
 
+	if date.Year() == 0 {
+		return nil, ErrorDateInvalid
+	}
+
 	var currTo string = "RUB"
 
 	if valTo, ok := queryParams["val_to"]; ok {

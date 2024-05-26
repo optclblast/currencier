@@ -1,0 +1,45 @@
+networks:
+  currencier-test-net:
+    name: currencier-test-net
+    driver: bridge
+
+services:
+  currencier-api-test:
+    container_name: currencier
+    build: 
+      context: .
+      dockerfile: ./Dockerfile
+    env_file:
+      - path: ./.env
+        required: true
+    networks:
+      - currencier-test-net
+    depends_on:
+      cache-test:
+        condition: service_healthy
+
+  currencier-test:
+    networks:
+      - currencier-test-net
+    build: 
+      context: .
+      dockerfile: ./Dockerfile.tests
+    env_file:
+      - path: ./.env
+        required: true
+    depends_on:
+      currencier-api-test:
+        condition: service_started
+
+  cache-test:
+    container_name: cache
+    image: redis:7.2.4
+    restart: always
+    networks:
+      - currencier-test-net
+    healthcheck:
+      interval: 1s
+      timeout: 5s
+      retries: 10
+      start_period: 2s
+      test: ["CMD", "redis-cli","ping"]

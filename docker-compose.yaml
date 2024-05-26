@@ -1,5 +1,14 @@
+volumes:
+  cache: {}
+
+networks:
+  currencier-net:
+    name: currencier-net
+    driver: bridge
+
 services:
   currencier:
+    container_name: currencier
     build: 
       context: .
       dockerfile: ./Dockerfile
@@ -8,6 +17,8 @@ services:
         required: true
     ports:
       - 8080:8080
+    networks:
+      - currencier-net
     depends_on:
       cache:
         condition: service_healthy
@@ -20,12 +31,12 @@ services:
       - 6380:6379
     volumes: 
       - cache:/data
+    networks:
+      - currencier-net
     healthcheck:
       interval: 1s
       timeout: 5s
       retries: 10
       start_period: 2s
       test: ["CMD", "redis-cli","ping"]
-
-volumes:
-  cache: {}
+    
