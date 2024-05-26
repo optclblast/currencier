@@ -1,6 +1,6 @@
 # Currencier API
 ## Setup
-1. Get an API token from [fxratesapi](https://fxratesapi.com) (it is free)
+1. Get an API token from [fxratesapi](https://fxratesapi.com) (it is free, only your github account needen, or email)
 2. Install docker on your machine 
 3. Set API token from [your fxrateapi account](https://fxratesapi.com/app/tokens) into .env file
 ```
@@ -54,3 +54,6 @@ Response:
   "value": 99.493813
 }
 ```
+## But why not cbr.ru?
+I think cbr.ru is very outdated. It's actually difficult to get it to work correctly with the Go client. Plus, there are only a few currencies available! What a mess.
+[fxratesapi](https://fxratesapi.com) is free and works very well.
