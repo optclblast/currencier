@@ -191,8 +191,6 @@ func (c *currencyInteractor) RunWorker() {
 			time.UTC,
 		)
 
-		fmt.Printf("sa : %v, bw: %v", startedAt, beginWork)
-
 		initialTicker := time.NewTicker(beginWork.Sub(startedAt))
 
 		<-initialTicker.C
